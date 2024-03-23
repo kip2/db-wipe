@@ -1,7 +1,8 @@
 use clap::Parser;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{database, MySql, Pool};
-use std::{env, error::Error, fs};
+use std::process::Command;
+use std::{env, error::Error};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
@@ -39,9 +40,33 @@ pub async fn run(config: Config) -> MyResult<()> {
         .await
         .unwrap_or_else(|_| panic!("Cannot connect to the database"));
 
-    // todo: Process to perform a dump in the dump flag is set
+    // Create dump file
+    if config.dump {
+        if create_dump(&user_name, &password, &db_name).is_ok() {
+            delete_database(&pool, db_name).await;
+        } else {
+            println!("Failed to create dump, not deleting database");
+        };
+    } else {
+        delete_database(&pool, db_name).await;
+    }
 
-    delete_database(&pool, db_name).await;
+    Ok(())
+}
+
+fn create_dump(user_name: &str, password: &str, db_name: &str) -> MyResult<()> {
+    let command = "mysqldump";
+    let output_file = format!("{}.bk.sql", db_name);
+    let password_arg = format!("-p{}", password);
+
+    let output = Command::new(command)
+        .arg("-u")
+        .arg(user_name)
+        .arg(&password_arg)
+        .arg(db_name)
+        .output()
+        .expect("Failed to start mysqldump");
+    std::fs::write(output_file, output.stdout).expect("Failed to write to file");
 
     Ok(())
 }
@@ -49,23 +74,27 @@ pub async fn run(config: Config) -> MyResult<()> {
 async fn delete_database(db: &Pool<MySql>, db_name: String) {
     let mut tx = db.begin().await.expect("transaction error.");
 
-    let query = format!("DROP DATABASE {};", db_name);
+    let mut queries: Vec<String> = Vec::new();
+    queries.push(format!("DROP DATABASE {};", db_name));
+    queries.push(format!("CREATE DATABASE {};", db_name));
 
     // Execute SQL query
-    let result = sqlx::query(&query).execute(&mut *tx).await;
+    for query in queries {
+        // Execute SQL query
+        let result = sqlx::query(&query).execute(&mut *tx).await;
 
-    match result {
-        Ok(_) => {}
-        Err(e) => {
-            println!("Database query failed: {}", e);
-            println!("Failed query: {:?}", &query);
-            // rollback
-            tx.rollback().await.expect("Transaction rollback error.");
-            return;
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                println!("Database query failed: {}", e);
+                println!("Failed query: {:?}", &query);
+                // rollback
+                tx.rollback().await.expect("Transaction rollback error.");
+                return;
+            }
         }
-    }
+    } // transaction commit
 
-    // transaction commit
     let _ = tx.commit().await.unwrap_or_else(|e| {
         println!("{:?}", e);
     });
