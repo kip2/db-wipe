@@ -8,4 +8,9 @@ async fn main() {
             std::process::exit(1);
         }
     };
+    // Execute query
+    if let Err(e) = db_wipe::run(config).await {
+        eprintln!("{}", e);
+        std::process::exit(1);
+    }
 }

@@ -6,10 +6,8 @@ use std::{env, error::Error, fs};
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
 pub struct Config {
-    #[arg(help = "Target database name")]
-    db_name: String,
-    #[arg(short = 'b', long = "backup", help = "Backup execution")]
-    backup: bool,
+    #[arg(short = 'd', long = "dump", help = "Create dump file")]
+    dump: bool,
 }
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -31,7 +29,7 @@ pub async fn run(config: Config) -> MyResult<()> {
 
     let database_url = format!(
         "mysql://{}:{}@{}:{}/{}",
-        user_name, password, host, port, db_name
+        &user_name, &password, &host, &port, &db_name
     );
 
     // Generate DB connection
@@ -41,26 +39,29 @@ pub async fn run(config: Config) -> MyResult<()> {
         .await
         .unwrap_or_else(|_| panic!("Cannot connect to the database"));
 
+    // todo: Process to perform a dump in the dump flag is set
+
+    delete_database(&pool, db_name).await;
+
     Ok(())
 }
 
-async fn execute_query(db: &Pool<MySql>, queries: Vec<String>) {
-    // Gererate transaction
+async fn delete_database(db: &Pool<MySql>, db_name: String) {
     let mut tx = db.begin().await.expect("transaction error.");
 
-    for query in queries {
-        // Execute SQL query
-        let result = sqlx::query(&query).execute(&mut *tx).await;
+    let query = format!("DROP DATABASE {};", db_name);
 
-        match result {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Database query failed: {}", e);
-                println!("Failed query: {:?}", &query);
-                // rollback
-                tx.rollback().await.expect("Transaction rollback error.");
-                return;
-            }
+    // Execute SQL query
+    let result = sqlx::query(&query).execute(&mut *tx).await;
+
+    match result {
+        Ok(_) => {}
+        Err(e) => {
+            println!("Database query failed: {}", e);
+            println!("Failed query: {:?}", &query);
+            // rollback
+            tx.rollback().await.expect("Transaction rollback error.");
+            return;
         }
     }
 
