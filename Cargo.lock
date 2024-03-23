@@ -292,7 +292,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "db-wipe"
+name = "db_wipe"
 version = "0.1.0"
 dependencies = [
  "clap",
