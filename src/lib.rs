@@ -1,6 +1,6 @@
 use clap::Parser;
 use sqlx::mysql::MySqlPoolOptions;
-use sqlx::{MySql, Pool};
+use sqlx::{database, MySql, Pool};
 use std::{env, error::Error, fs};
 
 #[derive(Debug, Parser)]
@@ -21,8 +21,18 @@ pub fn get_args() -> MyResult<Config> {
 
 pub async fn run(config: Config) -> MyResult<()> {
     // Read environment variables and generate URL
-    dotenv::dotenv().expect("Fialed to read .env file");
-    let database_url = env::var("DATABASE_URL").expect("DABASE_URL must be set");
+    dotenv::dotenv().expect("Failed to read .env file");
+
+    let user_name = env::var("USER_NAME").expect("USER_NAME must be set");
+    let db_name = env::var("DB_NAME").expect("DB_NAME must be set");
+    let password = env::var("PASSWORD").expect("PASSWORD must be set");
+    let host = env::var("HOST").expect("HOST must be set");
+    let port = env::var("PORT").expect("PORT must be set");
+
+    let database_url = format!(
+        "mysql://{}:{}@{}:{}/{}",
+        user_name, password, host, port, db_name
+    );
 
     // Generate DB connection
     let pool = MySqlPoolOptions::new()
