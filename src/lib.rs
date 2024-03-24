@@ -1,6 +1,6 @@
 use clap::Parser;
 use sqlx::mysql::MySqlPoolOptions;
-use sqlx::{database, MySql, Pool};
+use sqlx::{MySql, Pool};
 use std::io::{self, Write};
 use std::process::Command;
 use std::{env, error::Error};
