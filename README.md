@@ -6,7 +6,9 @@
 
 It efficiently clears or restores your database with minimal hassle.
 
-### Features
+---
+
+## Features
 
 - **Effortless Data Deletion**: Removing data from your database is a breeze with `db-wipe`. For added convenience and safety, you can use the `-d` option to create a backup before wiping the data, but this step is optional.
 
@@ -59,6 +61,8 @@ This command compiles the project in release mode, creating an optimized executa
 
 After building, the executable file can be found in the target/release directory within your project folder.
 
-### AUTHOR
+---
+
+## AUTHOR
 
 [kip2](https://github.com/kip2)
