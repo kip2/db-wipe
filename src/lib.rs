@@ -42,7 +42,7 @@ pub async fn run(config: Config) -> MyResult<()> {
         .unwrap_or_else(|_| panic!("Cannot connect to the database"));
 
     // Create dump file
-    if check_dump(config) {
+    if check_dump(&config) {
         if create_dump(&user_name, &password, &db_name).is_ok() {
             clear_database(&pool, db_name).await;
         } else {
@@ -72,7 +72,7 @@ fn prompt_yes_no(question: &str) -> bool {
     }
 }
 
-fn check_dump(config: Config) -> bool {
+fn check_dump(config: &Config) -> bool {
     if !config.dump {
         let question = "Should we also perform a dump? [y/n]: ";
         prompt_yes_no(question)
