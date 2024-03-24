@@ -2,17 +2,15 @@
 
 <h2 align="center"> Streamline Your Database Management </h2>
 
-`db-wipe` is an intuitive console application that simplifies database management by providing robust tools for data deletion and restoration.
+`db-wipe` is a console application that simplifies database management, offering tools for data deletion and restoration.
 
-It's built with efficiency in mind, allowing you to quickly clear your database or restore it from a backup with minimal hassle.
+It efficiently clears or restores your database with minimal hassle.
 
 ### Features
 
-- **Effortless Data Deletion**: With `db-wipe`, removing data from your database is a breeze. For added convenience and safety, use the `-d` option to create a backup before wiping the data.
+- **Effortless Data Deletion**: Removing data from your database is a breeze with `db-wipe`. For added convenience and safety, you can use the `-d` option to create a backup before wiping the data, but this step is optional.
 
-- **Seamless Restoration Process**: Restore your database effortlessly with `db-wipe -r`. Just ensure you have the appropriate dump file (`database-name.bk.sql`) ready, and let db-wipe handle the rest.
-
-`db-wipe` is designed to make database management straightforward, providing peace of mind through its simple yet powerful functionality.
+- **Seamless Restoration**: Easily restore your database with `db-wipe -r`, ensuring you have the `database-name.bk.sql` dump file ready.
 
 ### Usage
 
@@ -20,6 +18,8 @@ To delete your database:
 ```
 db-wipe
 ```
+
+If no options are provided, you will be prompted to choose whether to create a dump of the database contents.
 
 To create a dump before deletion:
 ```
