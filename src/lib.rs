@@ -1,6 +1,7 @@
 use clap::Parser;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{database, MySql, Pool};
+use std::io;
 use std::process::Command;
 use std::{env, error::Error};
 
@@ -41,17 +42,42 @@ pub async fn run(config: Config) -> MyResult<()> {
         .unwrap_or_else(|_| panic!("Cannot connect to the database"));
 
     // Create dump file
-    if config.dump {
+    if check_dump(config) {
         if create_dump(&user_name, &password, &db_name).is_ok() {
-            delete_database(&pool, db_name).await;
+            clear_database(&pool, db_name).await;
         } else {
             println!("Failed to create dump, not deleting database");
         };
     } else {
-        delete_database(&pool, db_name).await;
+        clear_database(&pool, db_name).await;
     }
 
     Ok(())
+}
+
+fn prompt_yes_no(question: &str) -> bool {
+    println!("{}", question);
+    loop {
+        let mut input = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+
+        match input.trim().to_lowercase().chars().next() {
+            Some('y') => return true,
+            Some('n') => return false,
+            _ => println!("Please enter 'y' or 'n'."),
+        }
+    }
+}
+
+fn check_dump(config: Config) -> bool {
+    if !config.dump {
+        let question = "Should we also perform a dump? [y/n]: ";
+        prompt_yes_no(question)
+    } else {
+        config.dump
+    }
 }
 
 fn create_dump(user_name: &str, password: &str, db_name: &str) -> MyResult<()> {
@@ -71,7 +97,7 @@ fn create_dump(user_name: &str, password: &str, db_name: &str) -> MyResult<()> {
     Ok(())
 }
 
-async fn delete_database(db: &Pool<MySql>, db_name: String) {
+async fn clear_database(db: &Pool<MySql>, db_name: String) {
     let mut tx = db.begin().await.expect("transaction error.");
 
     let mut queries: Vec<String> = Vec::new();
