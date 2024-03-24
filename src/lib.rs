@@ -1,7 +1,7 @@
 use clap::Parser;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{database, MySql, Pool};
-use std::io;
+use std::io::{self, Write};
 use std::process::Command;
 use std::{env, error::Error};
 
@@ -56,7 +56,8 @@ pub async fn run(config: Config) -> MyResult<()> {
 }
 
 fn prompt_yes_no(question: &str) -> bool {
-    println!("{}", question);
+    print!("{}", question);
+    io::stdout().flush().expect("Failed to flush stdout");
     loop {
         let mut input = String::new();
         io::stdin()
