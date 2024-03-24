@@ -73,8 +73,6 @@ async fn run_restoration_database(user_name: &str, db_name: &str) -> MyResult<()
     if !output.status.success() {
         eprintln!("mysql restoration failed with: {}", output.status);
 
-        let _ = remove_file(&input_file);
-
         return Err(Box::new(std::io::Error::new(
             std::io::ErrorKind::Other,
             "mysql restoration failed",
