@@ -1,8 +1,9 @@
 use clap::Parser;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
+use std::fs::File;
 use std::io::{self, Write};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::{env, error::Error};
 
 #[derive(Debug, Parser)]
@@ -43,7 +44,7 @@ pub async fn run(config: Config) -> MyResult<()> {
 
     // Create dump file
     if check_dump(&config) {
-        if create_dump(&user_name, &password, &db_name).is_ok() {
+        if create_dump(&user_name, &db_name).is_ok() {
             clear_database(&pool, db_name).await;
         } else {
             println!("Failed to create dump, not deleting database");
@@ -81,20 +82,24 @@ fn check_dump(config: &Config) -> bool {
     }
 }
 
-fn create_dump(user_name: &str, password: &str, db_name: &str) -> MyResult<()> {
+fn create_dump(user_name: &str, db_name: &str) -> MyResult<()> {
     let command = "mysqldump";
     let output_file = format!("{}.bk.sql", db_name);
-    let password_arg = format!("-p{}", password);
 
-    let output = Command::new(command)
+    let file = File::create(&output_file)?;
+
+    let child = Command::new(command)
         .arg("-u")
         .arg(user_name)
-        .arg(&password_arg)
+        .arg("-p")
         .arg(db_name)
-        .output()
-        .expect("Failed to start mysqldump");
-    std::fs::write(output_file, output.stdout).expect("Failed to write to file");
+        .stdout(Stdio::from(file))
+        .spawn()?;
 
+    let output = child.wait_with_output()?;
+    if !output.status.success() {
+        eprintln!("mysqldump failed with: {}", output.status);
+    }
     Ok(())
 }
 
