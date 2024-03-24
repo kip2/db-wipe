@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{ArgGroup, Parser};
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
 use std::fs::{remove_file, File};
@@ -8,9 +8,18 @@ use std::{env, error::Error};
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
+#[command(group(ArgGroup::new("action").args(&["dump", "restoration"]).required(false).multiple(false)))]
 pub struct Config {
     #[arg(short = 'd', long = "dump", help = "Create dump file")]
     dump: bool,
+    #[arg(short = 'r', long = "restoration", help = "Restoration the database")]
+    restoration: bool,
+}
+
+#[derive(Debug)]
+struct DBConfig {
+    user_name: String,
+    db_name: String,
 }
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -42,17 +51,33 @@ pub async fn run(config: Config) -> MyResult<()> {
         .await
         .unwrap_or_else(|_| panic!("Cannot connect to the database"));
 
+    let db_config = DBConfig { user_name, db_name };
+
+    if config.restoration {
+        // todo: implement restoration
+        println!("restoration");
+    } else {
+        let _ = run_clear_database(&pool, &config, &db_config).await;
+    }
+
+    Ok(())
+}
+
+async fn run_clear_database(
+    pool: &Pool<MySql>,
+    config: &Config,
+    db_config: &DBConfig,
+) -> MyResult<()> {
     // Create dump file
     if check_dump(&config) {
-        if create_dump(&user_name, &db_name).is_ok() {
-            clear_database(&pool, db_name).await;
+        if create_dump(&db_config.user_name, &db_config.db_name).is_ok() {
+            clear_database(&pool, &db_config.db_name).await;
         } else {
             println!("Failed to create dump, not deleting database");
         };
     } else {
-        clear_database(&pool, db_name).await;
+        clear_database(&pool, &db_config.db_name).await;
     }
-
     Ok(())
 }
 
@@ -110,7 +135,7 @@ fn create_dump(user_name: &str, db_name: &str) -> MyResult<()> {
     Ok(())
 }
 
-async fn clear_database(db: &Pool<MySql>, db_name: String) {
+async fn clear_database(db: &Pool<MySql>, db_name: &str) {
     let mut tx = db.begin().await.expect("transaction error.");
 
     let mut queries: Vec<String> = Vec::new();
