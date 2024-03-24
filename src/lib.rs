@@ -16,12 +16,6 @@ pub struct Config {
     restoration: bool,
 }
 
-#[derive(Debug)]
-struct DBConfig {
-    user_name: String,
-    db_name: String,
-}
-
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 pub fn get_args() -> MyResult<Config> {
@@ -51,13 +45,40 @@ pub async fn run(config: Config) -> MyResult<()> {
         .await
         .unwrap_or_else(|_| panic!("Cannot connect to the database"));
 
-    let db_config = DBConfig { user_name, db_name };
-
     if config.restoration {
-        // todo: implement restoration
-        println!("restoration");
+        run_restoration_database(&user_name, &db_name).await?;
     } else {
-        let _ = run_clear_database(&pool, &config, &db_config).await;
+        run_clear_database(&pool, &config, &user_name, &db_name).await?;
+    }
+
+    Ok(())
+}
+
+async fn run_restoration_database(user_name: &str, db_name: &str) -> MyResult<()> {
+    let command = "mysql";
+    let input_file = format!("{}.bk.sql", db_name);
+
+    let file = File::open(&input_file)?;
+
+    let child = Command::new(command)
+        .arg("-u")
+        .arg(user_name)
+        .arg("-p")
+        .arg(db_name)
+        .stdin(file)
+        .spawn()?;
+
+    let output = child.wait_with_output()?;
+
+    if !output.status.success() {
+        eprintln!("mysql restoration failed with: {}", output.status);
+
+        let _ = remove_file(&input_file);
+
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "mysql restoration failed",
+        )));
     }
 
     Ok(())
@@ -66,17 +87,18 @@ pub async fn run(config: Config) -> MyResult<()> {
 async fn run_clear_database(
     pool: &Pool<MySql>,
     config: &Config,
-    db_config: &DBConfig,
+    user_name: &str,
+    db_name: &str,
 ) -> MyResult<()> {
     // Create dump file
     if check_dump(&config) {
-        if create_dump(&db_config.user_name, &db_config.db_name).is_ok() {
-            clear_database(&pool, &db_config.db_name).await;
+        if create_dump(user_name, db_name).is_ok() {
+            clear_database(&pool, db_name).await;
         } else {
             println!("Failed to create dump, not deleting database");
         };
     } else {
-        clear_database(&pool, &db_config.db_name).await;
+        clear_database(&pool, db_name).await;
     }
     Ok(())
 }
