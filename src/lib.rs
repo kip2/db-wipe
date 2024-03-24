@@ -1,7 +1,7 @@
 use clap::Parser;
 use sqlx::mysql::MySqlPoolOptions;
 use sqlx::{MySql, Pool};
-use std::fs::File;
+use std::fs::{remove_file, File};
 use std::io::{self, Write};
 use std::process::{Command, Stdio};
 use std::{env, error::Error};
@@ -99,6 +99,13 @@ fn create_dump(user_name: &str, db_name: &str) -> MyResult<()> {
     let output = child.wait_with_output()?;
     if !output.status.success() {
         eprintln!("mysqldump failed with: {}", output.status);
+
+        let _ = remove_file(&output_file);
+
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "mysqldump failed",
+        )));
     }
     Ok(())
 }
