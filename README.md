@@ -31,21 +31,17 @@ This will allow `db-wipe` to automatically create backups when using the `-d` op
 
 ## Configuration
 
-Before using `db-wipe`, you need to set up the necessary configuration in a `.env` file at the root of your project. 
+To use db-wipe, you must configure your database connection in a .env file located at the root of your project.
 
-This file should contain the following entries:
+You should specify the connection details using a single entry in the file:
 
 ```env
-USER_NAME=user_name    # Your database username
-PASSWORD=password      # Your database password
-DB_NAME=db_name        # The name of the database to manage
-PORT=port_number       # The port number your database server is listening on
-HOST=host_name         # The hostname or IP address of your database server
+DATABASE_URL=mysql://username:password@hostname:port/db_name
 ```
 
-Ensure that each placeholder (e.g., user_name, password, etc.) is replaced with your actual database credentials and connection details.
+Replace username, password, hostname, port, and db_name with your actual database credentials and connection details. 
 
-This setup allows db-wipe to connect to and manage your database correctly.
+This setup allows db-wipe to correctly connect to and manage your database.
 
 ### Usage
 
