@@ -299,6 +299,7 @@ dependencies = [
  "dotenv",
  "sqlx",
  "tokio",
+ "url",
 ]
 
 [[package]]
