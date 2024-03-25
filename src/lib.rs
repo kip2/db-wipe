@@ -5,6 +5,7 @@ use std::fs::{remove_file, File};
 use std::io::{self, Write};
 use std::process::{Command, Stdio};
 use std::{env, error::Error};
+use url::Url;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
@@ -27,16 +28,16 @@ pub async fn run(config: Config) -> MyResult<()> {
     // Read environment variables and generate URL
     dotenv::dotenv().expect("Failed to read .env file");
 
-    let user_name = env::var("USER_NAME").expect("USER_NAME must be set");
-    let db_name = env::var("DB_NAME").expect("DB_NAME must be set");
-    let password = env::var("PASSWORD").expect("PASSWORD must be set");
-    let host = env::var("HOST").expect("HOST must be set");
-    let port = env::var("PORT").expect("PORT must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    let database_url = format!(
-        "mysql://{}:{}@{}:{}/{}",
-        &user_name, &password, &host, &port, &db_name
-    );
+    let parsed_url = Url::parse(&database_url).expect("Failed to parse DATABSE_URL");
+
+    let user_name = parsed_url.username();
+
+    let db_name = parsed_url
+        .path_segments()
+        .and_then(|mut segments| segments.nth(0))
+        .unwrap_or("");
 
     // Generate DB connection
     let pool = MySqlPoolOptions::new()
