@@ -47,19 +47,19 @@ This setup allows db-wipe to correctly connect to and manage your database.
 
 To delete your database:
 ```
-db-wipe
+./db-wipe
 ```
 
 If no options are provided, you will be prompted to choose whether to create a dump of the database contents.
 
 To create a dump before deletion:
 ```
-db-wipe -d
+./db-wipe -d
 ```
 
 To restore your database:
 ```
-db-wipe -r
+./db-wipe -r
 ```
 
 Ensure you have the dump file named `database-name.bk.sql` in the current directory for restoration.
